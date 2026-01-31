@@ -532,6 +532,9 @@
 
             // 更新所有标签文本
             updateAllLabels();
+            
+            // 更新音乐界面文本（添加到原有语言切换函数中）
+            updateMusicInterfaceText();
         }
 
         // 更新所有标签文本
@@ -5441,23 +5444,6 @@
             }, 200); // 延迟更长时间以确保层级切换完成
         };
         
-        // 重写语言切换函数以更新音乐界面文本
-        const originalToggleLanguage = window.toggleLanguage;
-        window.toggleLanguage = function() {
-            // 保存当前语言状态以便稍后判断
-            const wasChinese = document.getElementById('pageTitle').textContent.includes('宇宙迷航');
-            
-            // 调用原始语言切换函数
-            if (originalToggleLanguage) {
-                originalToggleLanguage();
-            }
-            
-            // 根据之前的状态来切换当前语言
-            currentLang = wasChinese ? 'en' : 'zh';
-            
-            // 更新音乐界面文本
-            updateMusicInterfaceText();
-        };
     </script>
 </body>
 </html>
