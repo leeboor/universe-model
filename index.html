@@ -5312,22 +5312,26 @@
             }
         };
         
-        // 当前语言
-        let currentLang = 'zh'; // 默认中文，将通过全局语言切换函数更新
+        // 注意：此模块将使用主程序的全局currentLang变量
         
         // 更新音乐界面文本
         function updateMusicInterfaceText() {
+            // 使用全局的currentLang变量（来自主程序）
             const musicToggleBtn = document.getElementById('music-toggle');
             const volumeLabel = document.getElementById('volume-label');
             
+            // 获取全局currentLang变量，如果未定义则默认为'zh'
+            const globalCurrentLang = typeof window.currentLang !== 'undefined' ? window.currentLang : 
+                                    typeof currentLang !== 'undefined' ? currentLang : 'zh';
+            
             if (musicToggleBtn) {
                 musicToggleBtn.textContent = musicEnabled ? 
-                    musicTexts[currentLang].musicOn : 
-                    musicTexts[currentLang].musicOff;
+                    musicTexts[globalCurrentLang].musicOn : 
+                    musicTexts[globalCurrentLang].musicOff;
             }
             
             if (volumeLabel) {
-                volumeLabel.textContent = musicTexts[currentLang].volume;
+                volumeLabel.textContent = musicTexts[globalCurrentLang].volume;
             }
         }
         
