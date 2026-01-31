@@ -5252,5 +5252,154 @@
         // 启动应用
         window.addEventListener('DOMContentLoaded', init);
     </script>
+    
+    <!-- 音乐播放器 -->
+    <div id="music-player" style="
+        position: absolute;
+        bottom: 80px;
+        right: 20px;
+        z-index: 300;
+        background: rgba(0, 30, 60, 0.8);
+        border: 1px solid #00f2fe;
+        border-radius: 5px;
+        padding: 10px;
+        backdrop-filter: blur(10px);
+    ">
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <button id="music-toggle" style="
+                background: rgba(0, 242, 254, 0.2);
+                color: #00f2fe;
+                border: 1px solid #00f2fe;
+                border-radius: 3px;
+                padding: 5px 10px;
+                cursor: pointer;
+                font-size: 14px;
+            ">🎵 音乐: 开</button>
+            <input type="range" id="music-volume" min="0" max="1" step="0.1" value="0.5" style="
+                width: 80px;
+            ">
+            <span style="color: #00f2fe; font-size: 12px;">音量</span>
+        </div>
+    </div>
+
+    <script>
+        // 音乐播放功能
+        let musicEnabled = true;
+        let currentMusic = null;
+        let currentLevel = 'galaxy'; // 默认层级
+        
+        // 音乐资源 - 使用免版权太空音乐
+        const musicTracks = {
+            galaxy: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav', // 替换为实际的银河系音乐
+            solar: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav', // 替换为实际的太阳系音乐
+            earth: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav'  // 替换为实际的地球音乐
+        };
+        
+        // 如果需要使用实际的太空音乐，请替换上面的URL为以下推荐的免版权音乐之一：
+        /*
+        银河系音乐推荐:
+        - "Space Ambient" 类型的音乐
+        - https://freepd.com/music/Space%20Ambient/At%20The%20Speed%20Of%20Light.mp3
+        - https://freepd.com/music/Space%20Ambient/Galaxy.mp3
+        
+        太阳系音乐推荐:
+        - "Mysterious" 或 "Cosmic" 类型的音乐
+        - https://freepd.com/music/Ambient/Cosmic%20Love.mp3
+        
+        地球音乐推荐:
+        - "Peaceful" 或 "Nature" 类型的音乐
+        - https://freepd.com/music/Ambient/Peaceful%20Piano.mp3
+        */
+        
+        // 创建音频元素
+        function createAudioElement(trackName) {
+            const audio = new Audio();
+            audio.src = musicTracks[trackName];
+            audio.loop = true;
+            audio.volume = 0.5;
+            return audio;
+        }
+        
+        // 播放指定层级的音乐
+        function playLevelMusic(level) {
+            if (!musicEnabled) return;
+            
+            // 停止当前音乐
+            if (currentMusic) {
+                currentMusic.pause();
+                currentMusic.currentTime = 0;
+            }
+            
+            // 创建并播放新音乐
+            try {
+                currentMusic = createAudioElement(level);
+                currentMusic.play().catch(e => console.log("音乐自动播放被阻止:", e));
+            } catch (e) {
+                console.log("无法播放音乐:", e);
+            }
+        }
+        
+        // 更新音乐状态
+        function updateMusicForLevel(newLevel) {
+            currentLevel = newLevel;
+            if (musicEnabled) {
+                playLevelMusic(newLevel);
+            }
+        }
+        
+        // 音乐开关
+        document.getElementById('music-toggle').addEventListener('click', function() {
+            musicEnabled = !musicEnabled;
+            this.textContent = musicEnabled ? '🎵 音乐: 开' : '🔇 音乐: 关';
+            
+            if (musicEnabled) {
+                playLevelMusic(currentLevel);
+            } else if (currentMusic) {
+                currentMusic.pause();
+            }
+        });
+        
+        // 音量控制
+        document.getElementById('music-volume').addEventListener('input', function(e) {
+            const volume = parseFloat(e.target.value);
+            if (currentMusic) {
+                currentMusic.volume = volume;
+            }
+        });
+        
+        // 修改层级切换函数以集成音乐
+        const originalTransitionToSolarSystem = window.transitionToSolarSystem;
+        const originalTransitionToEarth = window.transitionToEarth;
+        const originalGoBack = window.goBack;
+        
+        window.transitionToSolarSystem = function() {
+            originalTransitionToSolarSystem();
+            updateMusicForLevel('solar');
+        };
+        
+        window.transitionToEarth = function() {
+            originalTransitionToEarth();
+            updateMusicForLevel('earth');
+        };
+        
+        window.goBack = function() {
+            originalGoBack();
+            // 根据当前层级设置音乐
+            if (currentLevel === 'solar') {
+                updateMusicForLevel('solar');
+            } else if (currentLevel === 'galaxy') {
+                updateMusicForLevel('galaxy');
+            }
+        };
+        
+        // 页面加载完成后开始播放银河系音乐
+        window.addEventListener('load', function() {
+            setTimeout(() => {
+                if (musicEnabled) {
+                    playLevelMusic('galaxy');
+                }
+            }, 1000); // 延迟1秒开始播放
+        });
+    </script>
 </body>
 </html>
