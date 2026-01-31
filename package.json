@@ -1,0 +1,32 @@
+{
+  "name": "universe-model",
+  "version": "1.0.0",
+  "description": "A beautiful 3D interactive universe visualization application with three levels: Galaxy, Solar System, and Earth, featuring bilingual interface in Chinese and English.",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx serve .",
+    "test": "echo \"No tests specified\" && exit 0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/universe-model.git"
+  },
+  "keywords": [
+    "universe",
+    "visualization",
+    "threejs",
+    "3d",
+    "astronomy",
+    "education",
+    "webgl"
+  ],
+  "author": "LeeBoor",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/your-username/universe-model/issues"
+  },
+  "homepage": "https://github.com/your-username/universe-model#readme",
+  "devDependencies": {
+    "serve": "^14.2.0"
+  }
+}
