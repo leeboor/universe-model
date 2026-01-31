@@ -5274,11 +5274,11 @@
                 padding: 5px 10px;
                 cursor: pointer;
                 font-size: 14px;
-            ">🎵 音乐: 开</button>
+            ">🎵 Music: On</button>
             <input type="range" id="music-volume" min="0" max="1" step="0.1" value="0.5" style="
                 width: 80px;
             ">
-            <span style="color: #00f2fe; font-size: 12px;">音量</span>
+            <span id="volume-label" style="color: #00f2fe; font-size: 12px;">Volume</span>
         </div>
     </div>
 
@@ -5288,35 +5288,84 @@
         let currentMusic = null;
         let currentLevel = 'galaxy'; // 默认层级
         
-        // 音乐资源 - 使用免版权太空音乐
+        // 音乐资源 - 使用免版权太空音乐（备用方案）
         const musicTracks = {
-            galaxy: 'https://cdn.freesound.org/previews/543/543633_1012152-lq.mp3', // 银河系/太空氛围音乐
-            solar: 'https://cdn.freesound.org/previews/459/459939_8349153-lq.mp3', // 太阳系/宇宙探索音乐
-            earth: 'https://cdn.freesound.org/previews/585/585786_1104424-lq.mp3'   // 地球/宁静氛围音乐
+            galaxy: 'https://www.soundjay.com/misc/sounds/interface-harmony-1-81104.mp3', // 银河系氛围音乐
+            solar: 'https://www.soundjay.com/misc/sounds/interface-harmony-2-81105.mp3', // 太阳系氛围音乐
+            earth: 'https://www.soundjay.com/misc/sounds/magic-poof-5-191541.mp3'        // 地球氛围音乐
         };
         
-        // 创建音频元素
+        // 文本国际化
+        const musicTexts = {
+            zh: {
+                musicOn: '🎵 音乐: 开',
+                musicOff: '🔇 音乐: 关',
+                volume: '音量'
+            },
+            en: {
+                musicOn: '🎵 Music: On',
+                musicOff: '🔇 Music: Off',
+                volume: 'Volume'
+            }
+        };
+        
+        // 当前语言
+        let currentLang = 'zh'; // 默认中文，将通过全局语言切换函数更新
+        
+        // 更新音乐界面文本
+        function updateMusicInterfaceText() {
+            const musicToggleBtn = document.getElementById('music-toggle');
+            const volumeLabel = document.getElementById('volume-label');
+            
+            if (musicToggleBtn) {
+                musicToggleBtn.textContent = musicEnabled ? 
+                    musicTexts[currentLang].musicOn : 
+                    musicTexts[currentLang].musicOff;
+            }
+            
+            if (volumeLabel) {
+                volumeLabel.textContent = musicTexts[currentLang].volume;
+            }
+        }
+        
+        // 创建音频元素（添加错误处理）
         function createAudioElement(trackName) {
             const audio = new Audio();
             audio.src = musicTracks[trackName];
             audio.loop = true;
             audio.volume = 0.5;
+            // 预加载音频
+            audio.preload = 'auto';
             return audio;
         }
         
         // 播放指定层级的音乐
-        function playLevelMusic(level) {
+        async function playLevelMusic(level) {
             if (!musicEnabled) return;
             
-            // 停止当前音乐
-            if (currentMusic) {
-                currentMusic.pause();
-                currentMusic.currentTime = 0;
+            try {
+                // 停止当前音乐
+                if (currentMusic) {
+                    currentMusic.pause();
+                    currentMusic.currentTime = 0;
+                }
+                
+                // 创建并播放新音乐
+                currentMusic = createAudioElement(level);
+                
+                // 等待音频可以播放
+                await currentMusic.play().catch(e => {
+                    console.log("音乐自动播放被阻止，可能需要用户交互:", e);
+                    // 如果自动播放失败，稍后重试
+                    setTimeout(() => {
+                        if (musicEnabled && currentMusic) {
+                            currentMusic.play().catch(err => console.log("重试播放失败:", err));
+                        }
+                    }, 1000);
+                });
+            } catch (e) {
+                console.error("播放音乐时出错:", e);
             }
-            
-            // 创建并播放新音乐
-            currentMusic = createAudioElement(level);
-            currentMusic.play().catch(e => console.log("音乐自动播放被阻止:", e));
         }
         
         // 更新音乐状态
@@ -5327,24 +5376,42 @@
             }
         }
         
-        // 音乐开关
-        document.getElementById('music-toggle').addEventListener('click', function() {
-            musicEnabled = !musicEnabled;
-            this.textContent = musicEnabled ? '🎵 音乐: 开' : '🔇 音乐: 关';
+        // 确保DOM加载完成后再绑定事件
+        document.addEventListener('DOMContentLoaded', function() {
+            // 音乐开关
+            const musicToggleBtn = document.getElementById('music-toggle');
+            if (musicToggleBtn) {
+                musicToggleBtn.addEventListener('click', function() {
+                    musicEnabled = !musicEnabled;
+                    updateMusicInterfaceText();
+                    
+                    if (musicEnabled) {
+                        playLevelMusic(currentLevel);
+                    } else if (currentMusic) {
+                        currentMusic.pause();
+                        console.log("音乐已关闭");
+                    }
+                });
+            }
             
-            if (musicEnabled) {
-                playLevelMusic(currentLevel);
-            } else if (currentMusic) {
-                currentMusic.pause();
+            // 音量控制
+            const musicVolumeSlider = document.getElementById('music-volume');
+            if (musicVolumeSlider) {
+                musicVolumeSlider.addEventListener('input', function(e) {
+                    const volume = parseFloat(e.target.value);
+                    if (currentMusic) {
+                        currentMusic.volume = volume;
+                    }
+                });
             }
-        });
-        
-        // 音量控制
-        document.getElementById('music-volume').addEventListener('input', function(e) {
-            const volume = parseFloat(e.target.value);
-            if (currentMusic) {
-                currentMusic.volume = volume;
-            }
+            
+            // 页面加载完成后开始播放银河系音乐
+            setTimeout(() => {
+                if (musicEnabled) {
+                    playLevelMusic('galaxy');
+                }
+                updateMusicInterfaceText(); // 确保界面文本正确
+            }, 3000); // 延迟3秒开始播放，确保页面完全加载
         });
         
         // 重写层级切换函数以集成音乐
@@ -5354,12 +5421,12 @@
         
         window.transitionToSolarSystem = function() {
             originalTransitionToSolarSystem();
-            updateMusicForLevel('solar');
+            setTimeout(() => updateMusicForLevel('solar'), 100);
         };
         
         window.transitionToEarth = function() {
             originalTransitionToEarth();
-            updateMusicForLevel('earth');
+            setTimeout(() => updateMusicForLevel('earth'), 100);
         };
         
         window.goBack = function() {
@@ -5371,17 +5438,26 @@
                 } else if (currentLevel === 'galaxy') {
                     updateMusicForLevel('galaxy');
                 }
-            }, 100); // 短暂延迟以确保层级切换完成
+            }, 200); // 延迟更长时间以确保层级切换完成
         };
         
-        // 页面加载完成后开始播放银河系音乐
-        window.addEventListener('load', function() {
-            setTimeout(() => {
-                if (musicEnabled) {
-                    playLevelMusic('galaxy');
-                }
-            }, 2000); // 延迟2秒开始播放
-        });
+        // 重写语言切换函数以更新音乐界面文本
+        const originalToggleLanguage = window.toggleLanguage;
+        window.toggleLanguage = function() {
+            // 保存当前语言状态
+            const wasZh = currentLang === 'zh';
+            
+            // 调用原始语言切换函数
+            if (originalToggleLanguage) {
+                originalToggleLanguage();
+            }
+            
+            // 更新当前语言
+            currentLang = wasZh ? 'en' : 'zh';
+            
+            // 更新音乐界面文本
+            updateMusicInterfaceText();
+        };
     </script>
 </body>
 </html>
