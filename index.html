@@ -5254,38 +5254,7 @@
         
         // 启动应用
         window.addEventListener('DOMContentLoaded', init);
-    </script>
-    
-    <!-- 音乐播放器 -->
-    <div id="music-player" style="
-        position: absolute;
-        bottom: 80px;
-        right: 20px;
-        z-index: 300;
-        background: rgba(0, 30, 60, 0.8);
-        border: 1px solid #00f2fe;
-        border-radius: 5px;
-        padding: 10px;
-        backdrop-filter: blur(10px);
-    ">
-        <div style="display: flex; align-items: center; gap: 10px;">
-            <button id="music-toggle" style="
-                background: rgba(0, 242, 254, 0.2);
-                color: #00f2fe;
-                border: 1px solid #00f2fe;
-                border-radius: 3px;
-                padding: 5px 10px;
-                cursor: pointer;
-                font-size: 14px;
-            ">🎵 Music: On</button>
-            <input type="range" id="music-volume" min="0" max="1" step="0.1" value="0.5" style="
-                width: 80px;
-            ">
-            <span id="volume-label" style="color: #00f2fe; font-size: 12px;">Volume</span>
-        </div>
-    </div>
-
-    <script>
+        
         // 音乐播放功能
         let musicEnabled = true;
         let currentMusic = null;
@@ -5312,26 +5281,19 @@
             }
         };
         
-        // 注意：此模块将使用主程序的全局currentLang变量
-        
         // 更新音乐界面文本
         function updateMusicInterfaceText() {
-            // 使用全局的currentLang变量（来自主程序）
             const musicToggleBtn = document.getElementById('music-toggle');
             const volumeLabel = document.getElementById('volume-label');
             
-            // 获取全局currentLang变量，如果未定义则默认为'zh'
-            const globalCurrentLang = typeof window.currentLang !== 'undefined' ? window.currentLang : 
-                                    typeof currentLang !== 'undefined' ? currentLang : 'zh';
-            
             if (musicToggleBtn) {
                 musicToggleBtn.textContent = musicEnabled ? 
-                    musicTexts[globalCurrentLang].musicOn : 
-                    musicTexts[globalCurrentLang].musicOff;
+                    musicTexts[currentLang].musicOn : 
+                    musicTexts[currentLang].musicOff;
             }
             
             if (volumeLabel) {
-                volumeLabel.textContent = musicTexts[globalCurrentLang].volume;
+                volumeLabel.textContent = musicTexts[currentLang].volume;
             }
         }
         
@@ -5447,7 +5409,36 @@
                 }
             }, 200); // 延迟更长时间以确保层级切换完成
         };
-        
     </script>
+    
+    <!-- 音乐播放器 -->
+    <div id="music-player" style="
+        position: absolute;
+        bottom: 80px;
+        right: 20px;
+        z-index: 300;
+        background: rgba(0, 30, 60, 0.8);
+        border: 1px solid #00f2fe;
+        border-radius: 5px;
+        padding: 10px;
+        backdrop-filter: blur(10px);
+    ">
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <button id="music-toggle" style="
+                background: rgba(0, 242, 254, 0.2);
+                color: #00f2fe;
+                border: 1px solid #00f2fe;
+                border-radius: 3px;
+                padding: 5px 10px;
+                cursor: pointer;
+                font-size: 14px;
+            ">🎵 Music: On</button>
+            <input type="range" id="music-volume" min="0" max="1" step="0.1" value="0.5" style="
+                width: 80px;
+            ">
+            <span id="volume-label" style="color: #00f2fe; font-size: 12px;">Volume</span>
+        </div>
+    </div>
+
 </body>
 </html>
