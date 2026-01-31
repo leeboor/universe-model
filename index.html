@@ -5384,22 +5384,26 @@
         });
         
         // 重写层级切换函数以集成音乐
-        const originalTransitionToSolarSystem = window.transitionToSolarSystem;
-        const originalTransitionToEarth = window.transitionToEarth;
-        const originalGoBack = window.goBack;
+        // 保存原始函数引用
+        const originalFunctions = {
+            transitionToSolarSystem: window.transitionToSolarSystem,
+            transitionToEarth: window.transitionToEarth,
+            goBack: window.goBack
+        };
         
+        // 重写函数以集成音乐功能
         window.transitionToSolarSystem = function() {
-            originalTransitionToSolarSystem();
+            originalFunctions.transitionToSolarSystem();
             setTimeout(() => updateMusicForLevel('solar'), 100);
         };
         
         window.transitionToEarth = function() {
-            originalTransitionToEarth();
+            originalFunctions.transitionToEarth();
             setTimeout(() => updateMusicForLevel('earth'), 100);
         };
         
         window.goBack = function() {
-            originalGoBack();
+            originalFunctions.goBack();
             // 根据当前层级设置音乐
             setTimeout(() => {
                 if (currentLevel === 'solar') {
