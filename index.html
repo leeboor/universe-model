@@ -5444,16 +5444,16 @@
         // 重写语言切换函数以更新音乐界面文本
         const originalToggleLanguage = window.toggleLanguage;
         window.toggleLanguage = function() {
-            // 保存当前语言状态
-            const wasZh = currentLang === 'zh';
+            // 保存当前语言状态以便稍后判断
+            const wasChinese = document.getElementById('pageTitle').textContent.includes('宇宙迷航');
             
             // 调用原始语言切换函数
             if (originalToggleLanguage) {
                 originalToggleLanguage();
             }
             
-            // 更新当前语言
-            currentLang = wasZh ? 'en' : 'zh';
+            // 根据之前的状态来切换当前语言
+            currentLang = wasChinese ? 'en' : 'zh';
             
             // 更新音乐界面文本
             updateMusicInterfaceText();
