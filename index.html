@@ -101,7 +101,7 @@
         }
         
         #toggle-panel-button {
-            bottom: 20px;
+            bottom: 90px;
         }
         
         .loading {
@@ -263,6 +263,30 @@
         .earth-controls.visible {
             display: block;
         }
+        
+        /* 位置标记功能样式 */
+
+        
+        #getCurrentLocation:hover, #clearCustomMarkers:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+        
+        #getCurrentLocation:active, #clearCustomMarkers:active {
+            transform: translateY(1px);
+        }
+        
+        #locationStatus.success {
+            color: #4caf50;
+        }
+        
+        #locationStatus.error {
+            color: #f44336;
+        }
+        
+        #locationStatus.info {
+            color: #2196f3;
+        }
     </style>
 </head>
 <body>
@@ -275,8 +299,8 @@
         <button id="lang-toggle" onclick="toggleLanguage()">English/中文</button>
         
         <button id="back-button" class="nav-button" onclick="goBack()">返回</button>
-        <button id="enter-solar-button" class="nav-button" onclick="enterSolarSystem()">进入太阳系</button>
-        <button id="enter-earth-button" class="nav-button" onclick="enterEarth()">进入地球</button>
+        <button id="enter-solar-button" class="nav-button" onclick="enterSolarSystem()">进入太阳系☀</button>
+        <button id="enter-earth-button" class="nav-button" onclick="enterEarth()">进入地球🌏</button>
         <button id="toggle-panel-button" class="nav-button" onclick="toggleControlPanel()">隐藏控制面板</button>
         
         <div id="loading" class="loading">
@@ -351,6 +375,17 @@
                     <div id="testerText">测试　李一昕</div>
                     <div id="softwareText">AI: CodeBuddy</div>
                 </div>
+                
+                <div style="margin-top: 15px; border-top: 1px solid #444; padding-top: 15px;">
+                    <h4 id="locationMarkersTitle" style="margin-bottom: 10px; color: #4a9eff;">当前位置标记</h4>
+                    <div style="margin-bottom: 10px;">
+                        <button id="getCurrentLocation" style="width: 100%; padding: 8px; background: #2a7f5c; color: white; border: none; border-radius: 4px; cursor: pointer;">获取当前位置</button>
+                    </div>
+                    <div style="margin-bottom: 10px;">
+                        <button id="clearCustomMarkers" style="width: 100%; padding: 8px; background: #aa3a2a; color: white; border: none; border-radius: 4px; cursor: pointer;">清除自定义标记</button>
+                    </div>
+                    <div id="locationStatus" style="font-size: 12px; color: #aaa; margin-top: 5px; min-height: 16px;"></div>
+                </div>
             </div>
         </div>
     </div>
@@ -378,8 +413,8 @@
                 },
                 navButtons: {
                     back: '返回',
-                    enterSolar: '进入太阳系',
-                    enterEarth: '进入地球',
+                    enterSolar: '进入太阳系☀',
+                    enterEarth: '进入地球🌏',
                     togglePanel: '隐藏控制面板'
                 },
                 controlPanels: {
@@ -407,7 +442,10 @@
                     cities: ['隐藏城市', '显示城市'],
                     peaks: ['隐藏山峰', '显示山峰'],
                     lakes: ['隐藏湖泊', '隐藏湖泊'],
-                    rivers: ['隐藏河流', '显示河流']
+                    rivers: ['隐藏河流', '显示河流'],
+                    getLocation: '获取当前位置',
+                    clearMarkers: '清除自定义标记',
+                    locationMarkersTitle: '当前位置标记'
                 },
                 statusText: {
                     peaks: ['山峰: 已显示', '山峰: 未显示'],
@@ -435,8 +473,8 @@
                 },
                 navButtons: {
                     back: 'Back',
-                    enterSolar: 'Enter Solar System',
-                    enterEarth: 'Enter Earth',
+                    enterSolar: 'Enter Solar System☀',
+                    enterEarth: 'Enter Earth🌏',
                     togglePanel: 'Hide Panel'
                 },
                 controlPanels: {
@@ -464,7 +502,10 @@
                     cities: ['Hide Cities', 'Show Cities'],
                     peaks: ['Hide Peaks', 'Show Peaks'],
                     lakes: ['Hide Lakes', 'Show Lakes'],
-                    rivers: ['Hide Rivers', 'Show Rivers']
+                    rivers: ['Hide Rivers', 'Show Rivers'],
+                    getLocation: 'Get Current Location',
+                    clearMarkers: 'Clear Custom Markers',
+                    locationMarkersTitle: 'Current Location Markers'
                 },
                 statusText: {
                     peaks: ['Peaks: Shown', 'Peaks: Hidden'],
@@ -568,6 +609,29 @@
                 const text = currentLang === 'zh' ? data.name : data.englishName;
                 updateLabelText(label, text, '#00ff00');
             });
+
+            // 更新自定义标记标签
+            if (customMarkers) {
+                customMarkers.forEach(marker => {
+                    if (marker.userData && marker.userData.isCustomMarker) {
+                        const originalName = marker.userData.originalName;
+                        let displayText = marker.userData.name;
+                        let textColor = '#ffffff';
+                        // 如果是当前位置标记（原始名称为'here/这里'）
+                        if (originalName === 'here/这里') {
+                            displayText = currentLang === 'zh' ? '这里' : 'here';
+                            textColor = '#ffff00';
+                            // 更新存储的名称
+                            marker.userData.name = displayText;
+                        }
+                        // 查找文本sprite
+                        const textSprite = marker.children.find(child => child.isSprite);
+                        if (textSprite) {
+                            updateLabelText(textSprite, displayText, textColor);
+                        }
+                    }
+                });
+            }
         }
 
         // 更新标签文本
@@ -662,6 +726,23 @@
             updateVisibilityButton('togglePeaks', langTexts.toggleButtons.peaks);
             updateVisibilityButton('toggleLakes', langTexts.toggleButtons.lakes);
             updateVisibilityButton('toggleRivers', langTexts.toggleButtons.rivers);
+            
+            // 位置标记功能按钮
+            const getLocationBtn = document.getElementById('getCurrentLocation');
+            if (getLocationBtn) {
+                getLocationBtn.textContent = langTexts.toggleButtons.getLocation;
+            }
+            
+            const clearMarkersBtn = document.getElementById('clearCustomMarkers');
+            if (clearMarkersBtn) {
+                clearMarkersBtn.textContent = langTexts.toggleButtons.clearMarkers;
+            }
+            
+            // 更新当前位置标记标题
+            const locationMarkersTitle = document.getElementById('locationMarkersTitle');
+            if (locationMarkersTitle) {
+                locationMarkersTitle.textContent = langTexts.toggleButtons.locationMarkersTitle;
+            }
         }
         
         // 辅助函数：更新显示/隐藏按钮文本
@@ -750,6 +831,7 @@
         let scene, camera, renderer, controls;
         let raycaster, mouse;
         let currentLevel = 'galaxy'; // galaxy, solar, earth
+        let earthControlsInitialized = false; // 标志：地球控制面板是否已初始化
         let animationId;
         
         // 控制面板状态变量
@@ -1094,6 +1176,11 @@
         let isRotating = true;
         let rotationSpeed = 0.25; // 初始转速设置为25%
         let showCities = true, showPeaks = true, showLakes = true, showRivers = true;
+        
+        // 自定义标记变量
+        let customMarkersGroup = null;
+        let customMarkers = [];
+        let animationUpdates = [];
         let showEquator = false, showTropic = false, showTonLat = false, showArcAnt = false, showNames = false;
         let citiesGroup, peaksGroup, lakesGroup, riversGroup, equatorGroup, tropicGroup, arcAntGroup, latLonGroup, timezoneLabelsGroup, bordersGroup;
         let namesGroup;
@@ -2591,6 +2678,10 @@
             createAllEarthFeatures();
             
             scene.add(earthSystem);
+            
+            // 初始化自定义标记组
+            customMarkersGroup = new THREE.Group();
+            earthGroup.add(customMarkersGroup);
         }
 
         // 创建星空背景（仅用于地球层级，使用球型粒子）
@@ -2771,6 +2862,10 @@
                 beijing: { name: "北京", englishName: "Beijing", country: "中国", englishCountry: "China", continent: "亚洲", englishContinent: "Asia", coordinates: [116.4074, 39.9042], population: 21540000 },
                 shanghai: { name: "上海", englishName: "Shanghai", country: "中国", englishCountry: "China", continent: "亚洲", englishContinent: "Asia", coordinates: [121.4737, 31.2304], population: 24281400 },
                 xian: { name: "西安", englishName: "Xi'an", country: "中国", englishCountry: "China", continent: "亚洲", englishContinent: "Asia", coordinates: [108.9398, 34.3416], population: 12952000 },
+                chengdu: { name: "成都", englishName: "Chengdu", country: "中国", englishCountry: "China", continent: "亚洲", englishContinent: "Asia", coordinates: [104.0665, 30.5728], population: 21070000 },
+                hongkong: { name: "香港", englishName: "Hong Kong", country: "中国", englishCountry: "China", continent: "亚洲", englishContinent: "Asia", coordinates: [114.1694, 22.3193], population: 7481000 },
+                macau: { name: "澳门", englishName: "Macau", country: "中国", englishCountry: "China", continent: "亚洲", englishContinent: "Asia", coordinates: [113.5491, 22.1987], population: 683000 },
+                taipei: { name: "台北", englishName: "Taipei", country: "中国", englishCountry: "China", continent: "亚洲", englishContinent: "Asia", coordinates: [121.5654, 25.0330], population: 2657000 },
                 tokyo: { name: "东京", englishName: "Tokyo", country: "日本", englishCountry: "Japan", continent: "亚洲", englishContinent: "Asia", coordinates: [139.6917, 35.6895], population: 37400068 },
                 newyork: { name: "纽约", englishName: "New York", country: "美国", englishCountry: "USA", continent: "北美洲", englishContinent: "North America", coordinates: [-74.0060, 40.7128], population: 8336817 },
                 london: { name: "伦敦", englishName: "London", country: "英国", englishCountry: "UK", continent: "欧洲", englishContinent: "Europe", coordinates: [-0.1276, 51.5074], population: 9002488 },
@@ -3339,7 +3434,7 @@
                 latLonGroup.add(line);
             }
             latLonGroup.visible = false;
-            earthSystem.add(latLonGroup);
+            earthGroup.add(latLonGroup);
         }
         
         // 创建标记
@@ -3378,6 +3473,335 @@
             };
             
             return group;
+        }
+        
+        // ===== 自定义标记功能 =====
+        function addCustomMarker(lat, lon, name, color = 0xff4444) {
+            if (!customMarkersGroup) {
+                console.error('自定义标记组未初始化');
+                return null;
+            }
+            
+            const position = latLonToVector3(lat, lon, 5.08);
+            
+            // 创建标记组
+            const markerGroup = new THREE.Group();
+            markerGroup.position.copy(position);
+            markerGroup.renderOrder = 10; // 提高渲染顺序
+            
+            // 黄色锥形标记（增大尺寸）
+            const coneGeometry = new THREE.ConeGeometry(0.03, 0.075, 12);
+            const coneMaterial = new THREE.MeshPhongMaterial({
+                color: 0xffff00, // 固定为黄色
+                transparent: true,
+                opacity: 0.95,
+                emissive: 0xffff00,
+                emissiveIntensity: 0.4,
+                depthTest: false, // 禁用深度测试，确保显示在最前面
+                depthWrite: false
+            });
+            const cone = new THREE.Mesh(coneGeometry, coneMaterial);
+            // 旋转锥形，使其尖端朝向地球中心
+            const inward = position.clone().negate().normalize();
+            cone.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), inward);
+            cone.renderOrder = 11; // 锥形渲染顺序更高
+            markerGroup.add(cone);
+            
+            // 光环效果（使用RingGeometry，增大尺寸）
+            const ringGeometry = new THREE.RingGeometry(0.05, 0.075, 16);
+            const ringMaterial = new THREE.MeshBasicMaterial({
+                color: 0xffff00, // 黄色
+                transparent: true,
+                opacity: 0.5,
+                side: THREE.DoubleSide,
+                depthTest: false,
+                depthWrite: false
+            });
+            const ring = new THREE.Mesh(ringGeometry, ringMaterial);
+            // 使光环法线指向地球中心
+            ring.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), inward);
+            ring.renderOrder = 10;
+            markerGroup.add(ring);
+            
+            // 脉冲光环动画（增大尺寸）
+            const pulseRingGeometry = new THREE.RingGeometry(0.0625, 0.1, 16);
+            const pulseRingMaterial = new THREE.MeshBasicMaterial({
+                color: 0xffff00, // 黄色
+                transparent: true,
+                opacity: 0.3,
+                side: THREE.DoubleSide,
+                depthTest: false,
+                depthWrite: false
+            });
+            const pulseRing = new THREE.Mesh(pulseRingGeometry, pulseRingMaterial);
+            // 使脉冲光环法线指向地球中心
+            pulseRing.quaternion.copy(ring.quaternion);
+            pulseRing.userData.pulse = 0;
+            pulseRing.renderOrder = 9;
+            markerGroup.add(pulseRing);
+            
+            // 文字标签（提高位置）
+            let displayText = name;
+            let textColor = '#ffffff';
+            // 如果是当前位置标记，根据语言选择文本，颜色为黄色
+            if (name === 'here/这里') {
+                displayText = currentLang === 'zh' ? '这里' : 'here';
+                textColor = '#ffff00';
+            }
+            const textSprite = createTextSprite(displayText, textColor);
+            textSprite.position.set(0, 0.4, 0);
+            textSprite.scale.set(0.6, 0.6, 1);
+            textSprite.renderOrder = 12; // 文字渲染顺序最高
+            markerGroup.add(textSprite);
+            
+            // 标记数据
+            markerGroup.userData = {
+                name: displayText,
+                originalName: name,
+                type: 'custom',
+                lat: lat,
+                lon: lon,
+                color: 0xffff00, // 存储黄色
+                cone: cone,
+                ring: ring,
+                pulseRing: pulseRing,
+                isCustomMarker: true
+            };
+            
+            customMarkersGroup.add(markerGroup);
+            customMarkers.push(markerGroup);
+            
+            // 添加到动画更新
+            if (!animationUpdates.some(update => update.id === 'customMarkers')) {
+                animationUpdates.push({
+                    id: 'customMarkers',
+                    update: function(time) {
+                        if (customMarkersGroup && customMarkersGroup.visible) {
+                            customMarkers.forEach((marker, index) => {
+                                // 锥形标记上下跳动动画
+                                if (marker.userData.cone) {
+                                    const bounce = Math.sin(time * 3 + index * 0.5) * 0.03;
+                                    const originalPosition = marker.position.clone().normalize();
+                                    marker.userData.cone.position.copy(originalPosition.multiplyScalar(bounce));
+                                }
+                                
+                                // 光环缩放动画（与城市标记保持一致）
+                                if (marker.userData.ring) {
+                                    const scale = 1 + Math.sin(time * 4 + index * 0.3) * 0.3;
+                                    marker.userData.ring.scale.setScalar(scale);
+                                    marker.userData.ring.material.opacity = 0.5 * (1 + Math.sin(time * 4 + index * 0.3)) * 0.5;
+                                }
+                                
+                                // 脉冲光环缩放动画
+                                if (marker.userData.pulseRing) {
+                                    const pulseScale = 1 + Math.sin(time * 2 + index * 0.2) * 0.4;
+                                    marker.userData.pulseRing.scale.setScalar(pulseScale);
+                                    marker.userData.pulseRing.material.opacity = 0.3 * (1 + Math.sin(time * 2 + index * 0.2)) * 0.5;
+                                }
+                            });
+                        }
+                    }
+                });
+            }
+            
+            return markerGroup;
+        }
+        
+        function clearCustomMarkers() {
+            if (!customMarkersGroup) return;
+            
+            while (customMarkersGroup.children.length > 0) {
+                customMarkersGroup.remove(customMarkersGroup.children[0]);
+            }
+            
+            customMarkers = [];
+            
+            // 重置视图并开始旋转
+            controls.reset();
+            camera.position.set(0, 0, 10);
+            controls.update();
+            
+            // 开始地球旋转
+            isRotating = true;
+            const toggleButton = document.getElementById('toggleRotation');
+            if (toggleButton) {
+                toggleButton.textContent = texts[currentLang].toggleButtons.rotation[0];
+            }
+            
+            // 更新状态显示
+            const statusEl = document.getElementById('locationStatus');
+            statusEl.textContent = '已清除所有自定义标记';
+            statusEl.className = 'success';
+            
+            setTimeout(() => {
+                statusEl.textContent = '';
+                statusEl.className = '';
+            }, 3000);
+        }
+        
+        // ===== 地理编码和位置服务 =====
+
+        
+        function getCurrentLocation() {
+            const statusEl = document.getElementById('locationStatus');
+            
+            if (!navigator.geolocation) {
+                statusEl.textContent = '浏览器不支持地理位置功能';
+                statusEl.className = 'error';
+                setTimeout(() => { statusEl.textContent = ''; statusEl.className = ''; }, 3000);
+                return;
+            }
+            
+            statusEl.textContent = '正在获取您的位置...';
+            statusEl.className = 'info';
+            
+            navigator.geolocation.getCurrentPosition(
+                async (position) => {
+                    const lat = position.coords.latitude;
+                    const lon = position.coords.longitude;
+                    
+                    statusEl.textContent = `您的位置: (${lat.toFixed(4)}, ${lon.toFixed(4)})`;
+                    if (currentLevel !== 'earth') {
+                        statusEl.textContent += ' - 进入地球查看标记';
+                    }
+                    statusEl.className = 'success';
+                    
+                    // 反向地理编码获取位置名称
+                    try {
+                        const controller = new AbortController();
+                        const timeoutId = setTimeout(() => controller.abort(), 10000);
+                        const response = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`, {
+                            headers: {
+                                'User-Agent': 'UniverseModel/1.0 (https://example.com)'
+                            },
+                            signal: controller.signal
+                        });
+                        clearTimeout(timeoutId);
+                        const data = await response.json();
+                        
+                        // 当前位置标记使用 "here/这里"
+                        const locationName = 'here/这里';
+                        
+                        // 添加标记到地球
+                        const marker = addCustomMarker(lat, lon, locationName, 0xffff00);
+                        
+                        if (marker) {
+                            // 显示当前位置标记后，自动暂停地球旋转
+                            isRotating = false;
+                            const toggleButton = document.getElementById('toggleRotation');
+                            if (toggleButton) {
+                                toggleButton.textContent = texts[currentLang].toggleButtons.rotation[1];
+                            }
+                            
+                            // 如果不在"earth"层级，切换到地球层级
+                            if (currentLevel !== 'earth') {
+                                // 切换到地球层级（不带动画）
+                                currentLevel = 'earth';
+                                solarSystem.visible = false;
+                                earthSystem.visible = true;
+                                if (customMarkersGroup) customMarkersGroup.visible = true;
+                                if (solarStarfield) solarStarfield.visible = false;
+                                if (earthStarfield) earthStarfield.visible = true;
+                                if (window.earthMoon) window.earthMoon.visible = true;
+                                document.getElementById('earth-controls').classList.add('visible');
+                                document.getElementById('galaxy-controls').classList.remove('visible');
+                                document.getElementById('solar-controls').classList.remove('visible');
+                                panelToggleCount = 0;
+                                isPanelVisible = true;
+                                showingCredits = false;
+                                document.getElementById('normalInfo').style.display = 'block';
+                                document.getElementById('normalInfo2').style.display = 'block';
+                                document.getElementById('creditsInfo').style.display = 'none';
+                                setupEarthControls();
+                                updateNavButtons();
+                                document.getElementById('instructions').innerHTML = texts[currentLang].instructions.earth;
+                            }
+                            
+                            // 将相机聚焦到该位置
+                            const worldPosition = new THREE.Vector3();
+                            marker.getWorldPosition(worldPosition);
+                            const cameraPosition = worldPosition.clone().multiplyScalar(1.5);
+                            
+                            camera.position.copy(cameraPosition);
+                            // 保持相机看向当前目标（地球中心），不改变OrbitControls目标
+                        }
+                        
+                    } catch (error) {
+                        console.error('反向地理编码错误:', error);
+                        // 即使反向地理编码失败，也添加标记
+                        const marker = addCustomMarker(lat, lon, 'here/这里', 0xffff00);
+                        
+                        if (marker) {
+                            // 显示当前位置标记后，自动暂停地球旋转
+                            isRotating = false;
+                            const toggleButton = document.getElementById('toggleRotation');
+                            if (toggleButton) {
+                                toggleButton.textContent = texts[currentLang].toggleButtons.rotation[1];
+                            }
+                            
+                            // 如果不在"earth"层级，切换到地球层级
+                            if (currentLevel !== 'earth') {
+                                // 切换到地球层级（不带动画）
+                                currentLevel = 'earth';
+                                solarSystem.visible = false;
+                                earthSystem.visible = true;
+                                if (customMarkersGroup) customMarkersGroup.visible = true;
+                                if (solarStarfield) solarStarfield.visible = false;
+                                if (earthStarfield) earthStarfield.visible = true;
+                                if (window.earthMoon) window.earthMoon.visible = true;
+                                document.getElementById('earth-controls').classList.add('visible');
+                                document.getElementById('galaxy-controls').classList.remove('visible');
+                                document.getElementById('solar-controls').classList.remove('visible');
+                                panelToggleCount = 0;
+                                isPanelVisible = true;
+                                showingCredits = false;
+                                document.getElementById('normalInfo').style.display = 'block';
+                                document.getElementById('normalInfo2').style.display = 'block';
+                                document.getElementById('creditsInfo').style.display = 'none';
+                                setupEarthControls();
+                                updateNavButtons();
+                                document.getElementById('instructions').innerHTML = texts[currentLang].instructions.earth;
+                            }
+                            
+                            // 将相机聚焦到该位置
+                            const worldPosition = new THREE.Vector3();
+                            marker.getWorldPosition(worldPosition);
+                            const cameraPosition = worldPosition.clone().multiplyScalar(1.5);
+                            
+                            camera.position.copy(cameraPosition);
+                            // 保持相机看向当前目标（地球中心），不改变OrbitControls目标
+                        }
+                    }
+                    
+                    setTimeout(() => { 
+                        statusEl.textContent = ''; 
+                        statusEl.className = ''; 
+                    }, 5000);
+                },
+                (error) => {
+                    let errorMessage = '无法获取位置';
+                    switch(error.code) {
+                        case error.PERMISSION_DENIED:
+                            errorMessage = '用户拒绝了位置请求';
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            errorMessage = '位置信息不可用';
+                            break;
+                        case error.TIMEOUT:
+                            errorMessage = '获取位置超时';
+                            break;
+                    }
+                    
+                    statusEl.textContent = errorMessage;
+                    statusEl.className = 'error';
+                    setTimeout(() => { statusEl.textContent = ''; statusEl.className = ''; }, 5000);
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 0
+                }
+            );
         }
         
         // ===== 事件处理 =====
@@ -3564,7 +3988,7 @@
                             else if (type === 'lake') showFunction = showLakeTooltip;
                             else if (type === 'river') showFunction = showRiverTooltip;
 
-                            if (showFunction && (!currentTooltip || currentTooltip !== getActiveTooltip(type, key))) {
+                            if (showFunction) {
                                 showFunction(data, key, object);
 
                                 // 弹窗显示时暂停地球旋转
@@ -3783,6 +4207,11 @@
             // 隐藏太阳系，显示地球
             solarSystem.visible = false;
             earthSystem.visible = true;
+            
+            // 显示自定义标记组
+            if (customMarkersGroup) {
+                customMarkersGroup.visible = true;
+            }
 
             // 隐藏太阳系星空背景
             if (solarStarfield) {
@@ -3837,6 +4266,11 @@
                 currentLevel = 'solar';
                 earthSystem.visible = false;
                 solarSystem.visible = true;
+                
+                // 隐藏自定义标记组
+                if (customMarkersGroup) {
+                    customMarkersGroup.visible = false;
+                }
 
                 // 隐藏星空背景
                 if (earthStarfield) {
@@ -3963,7 +4397,8 @@
             const normalInfo = document.getElementById('normalInfo');
 			const normalInfo2 = document.getElementById('normalInfo2');
             const creditsInfo = document.getElementById('creditsInfo');
-            
+            const musicPlayer = document.getElementById('music-player'); // 获取音乐控制面板
+
             if (showingCredits) {
                 // 如果正在显示制作人员信息，点击后恢复正常显示
                 showingCredits = false;
@@ -3974,6 +4409,8 @@
 				panelToggleFlag = false;
                 isPanelVisible = true;
                 panel.classList.add('visible');
+                // 同时显示音乐控制面板
+                if (musicPlayer) musicPlayer.style.display = 'block';
                 toggleBtn.textContent = texts[currentLang].navButtons.togglePanel;
             } else {
 			if (panelToggleFlag)
@@ -3989,15 +4426,21 @@
                     creditsInfo.style.display = 'block';
                     panel.classList.add('visible');
                     isPanelVisible = true;
+                    // 同时显示音乐控制面板
+                    if (musicPlayer) musicPlayer.style.display = 'block';
                     toggleBtn.textContent = texts[currentLang].navButtons.togglePanel;
                 } else {
                     // 普通切换
                     isPanelVisible = !isPanelVisible;
                     if (isPanelVisible) {
                         panel.classList.add('visible');
+                        // 同时显示音乐控制面板
+                        if (musicPlayer) musicPlayer.style.display = 'block';
                         toggleBtn.textContent = texts[currentLang].navButtons.togglePanel;
                     } else {
                         panel.classList.remove('visible');
+                        // 同时隐藏音乐控制面板
+                        if (musicPlayer) musicPlayer.style.display = 'none';
                         toggleBtn.textContent = currentLang === 'zh' ? (texts[currentLang].navButtons.togglePanel === '隐藏控制面板' ? '显示控制面板' : 'Show Panel') : (texts[currentLang].navButtons.togglePanel === '显示控制面板' ? 'Hide Panel' : 'Hide Panel');
                     }
                 }
@@ -4052,6 +4495,12 @@
         
         // 设置地球层级控制
         function setupEarthControls() {
+            // 防止重复初始化事件监听器
+            if (earthControlsInitialized) {
+                return;
+            }
+            earthControlsInitialized = true;
+            
             const rotationSlider = document.getElementById('rotationSpeed');
             const cloudSlider = document.getElementById('cloudOpacity');
             const toggleButton = document.getElementById('toggleRotation');
@@ -4472,38 +4921,65 @@
 
         // 显示城市弹窗
         function showCityTooltip(cityData, cityKey, cityObject) {
+            // 检查是否已经有城市弹窗显示
+            if (activeCityTooltip) {
+                return;
+            }
             hideCurrentTooltip();
             activeCityTooltip = createSciFiTooltip(cityData, 'city');
             activeCityKey = cityKey;
             currentTooltip = activeCityTooltip;
-            activePeakTooltip = activeCityTooltip;
+            activePeakTooltip = null;
+            activeLakeTooltip = null;
+            activeRiverTooltip = null;
             resetTooltipTimer();
         }
 
         // 显示山峰弹窗
         function showPeakTooltip(peakData, peakKey, peakObject) {
+            // 检查是否已经有山峰弹窗显示
+            if (activePeakTooltip) {
+                return;
+            }
             hideCurrentTooltip();
             activePeakTooltip = createSciFiTooltip(peakData, 'peak');
             activePeakKey = peakKey;
             currentTooltip = activePeakTooltip;
+            activeCityTooltip = null;
+            activeLakeTooltip = null;
+            activeRiverTooltip = null;
             resetTooltipTimer();
         }
 
         // 显示湖泊弹窗
         function showLakeTooltip(lakeData, lakeKey, lakeObject) {
+            // 检查是否已经有湖泊弹窗显示
+            if (activeLakeTooltip) {
+                return;
+            }
             hideCurrentTooltip();
             activeLakeTooltip = createSciFiTooltip(lakeData, 'lake');
             activeLakeKey = lakeKey;
             currentTooltip = activeLakeTooltip;
+            activeCityTooltip = null;
+            activePeakTooltip = null;
+            activeRiverTooltip = null;
             resetTooltipTimer();
         }
 
         // 显示河流弹窗
         function showRiverTooltip(riverData, riverKey, riverObject) {
+            // 检查是否已经有河流弹窗显示
+            if (activeRiverTooltip) {
+                return;
+            }
             hideCurrentTooltip();
             activeRiverTooltip = createSciFiTooltip(riverData, 'river');
             activeRiverKey = riverKey;
             currentTooltip = activeRiverTooltip;
+            activeCityTooltip = null;
+            activePeakTooltip = null;
+            activeLakeTooltip = null;
             resetTooltipTimer();
         }
 
@@ -5248,24 +5724,415 @@
                 }
             }
             
+            // 执行自定义动画更新
+            animationUpdates.forEach(update => {
+                if (update.update) {
+                    update.update(time);
+                }
+            });
+            
             controls.update();
             renderer.render(scene, camera);
         }
         
         // 启动应用
-        window.addEventListener('DOMContentLoaded', init);
+        window.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM加载完成，开始初始化');
+            init(); // 初始化3D场景
+
+            // 初始化音乐功能
+            initMusicPlayer();
+            console.log('音乐播放器初始化完成');
+            
+            // 初始化位置标记功能
+            setTimeout(() => {
+                const locationButton = document.getElementById('getCurrentLocation');
+                const clearButton = document.getElementById('clearCustomMarkers');
+                
+                if (locationButton) {
+                    locationButton.addEventListener('click', getCurrentLocation);
+                }
+                
+                if (clearButton) {
+                    clearButton.addEventListener('click', clearCustomMarkers);
+                }
+                
+                console.log('位置标记功能初始化完成');
+            }, 500); // 稍等一段时间确保DOM完全加载
+        });
         
         // 音乐播放功能
-        let musicEnabled = true;
+        let musicEnabled = false;
         let currentMusic = null;
-        let currentLevel = 'galaxy'; // 默认层级
-        
-        // 音乐资源 - 使用免版权太空音乐（备用方案）
-        const musicTracks = {
-            galaxy: 'https://www.soundjay.com/misc/sounds/interface-harmony-1-81104.mp3', // 银河系氛围音乐
-            solar: 'https://www.soundjay.com/misc/sounds/interface-harmony-2-81105.mp3', // 太阳系氛围音乐
-            earth: 'https://www.soundjay.com/misc/sounds/magic-poof-5-191541.mp3'        // 地球氛围音乐
-        };
+        // currentLevel 已在上面声明（第752行），此处不再重复声明
+
+        // Web Audio API 程序化音乐生成器 - 优美旋律版
+        class SpaceMusicGenerator {
+            constructor() {
+                this.audioContext = null;
+                this.isInitialized = false;
+                this.masterGain = null;
+                this.oscillators = [];
+                this.gainNodes = [];
+                this.envelopes = [];
+                this.isPlaying = false;
+                this.noteQueue = [];
+                this.currentNoteIndex = 0;
+                this.intervalId = null;
+            }
+
+            async init() {
+                if (this.isInitialized) {
+                    // 如果已经初始化，确保音频上下文是运行状态
+                    if (this.audioContext && this.audioContext.state === 'suspended') {
+                        await this.audioContext.resume();
+                        console.log('音频上下文已恢复');
+                    }
+                    return;
+                }
+
+                try {
+                    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    this.masterGain = this.audioContext.createGain();
+                    this.masterGain.connect(this.audioContext.destination);
+                    this.masterGain.gain.value = 0.8; // 提高初始音量到0.8
+                    this.isInitialized = true;
+                    console.log('Web Audio API 初始化成功，采样率:', this.audioContext.sampleRate);
+
+                    // 尝试恢复音频上下文
+                    if (this.audioContext.state === 'suspended') {
+                        await this.audioContext.resume();
+                        console.log('音频上下文已启动');
+                    }
+                } catch (error) {
+                    console.error('Web Audio API 初始化失败:', error);
+                }
+            }
+
+            // 停止所有振荡器和计时器
+            stopAll() {
+                if (this.intervalId) {
+                    clearInterval(this.intervalId);
+                    this.intervalId = null;
+                }
+
+                this.oscillators.forEach(osc => {
+                    try {
+                        osc.stop();
+                        osc.disconnect();
+                    } catch (e) {}
+                });
+                this.oscillators = [];
+
+                this.gainNodes.forEach(gain => {
+                    try {
+                        gain.disconnect();
+                    } catch (e) {}
+                });
+                this.gainNodes = [];
+
+                this.envelopes.forEach(env => {
+                    try {
+                        env.disconnect();
+                    } catch (e) {}
+                });
+                this.envelopes = [];
+
+                this.isPlaying = false;
+            }
+
+            // 创建单个音符
+            playNote(frequency, duration, startTime, type = 'sine', volume = 0.5) {
+                if (!this.audioContext) return;
+
+                const osc = this.audioContext.createOscillator();
+                const gain = this.audioContext.createGain();
+                const filter = this.audioContext.createBiquadFilter();
+
+                osc.type = type;
+                osc.frequency.setValueAtTime(frequency, startTime);
+
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(5000, startTime); // 进一步提高滤波器频率
+                filter.Q.value = 2; // 提高Q值增强音色
+
+                // ADSR 包络
+                const attack = 0.15;
+                const decay = 0.25;
+                const sustain = 0.6;
+                const release = 0.5;
+
+                gain.gain.setValueAtTime(0, startTime);
+                gain.gain.linearRampToValueAtTime(volume, startTime + attack);
+                gain.gain.linearRampToValueAtTime(volume * sustain, startTime + attack + decay);
+                gain.gain.setValueAtTime(volume * sustain, startTime + duration - release);
+                gain.gain.linearRampToValueAtTime(0, startTime + duration);
+
+                osc.connect(filter);
+                filter.connect(gain);
+                gain.connect(this.masterGain);
+
+                osc.start(startTime);
+                osc.stop(startTime + duration + 0.1);
+
+                this.oscillators.push(osc);
+                this.gainNodes.push(gain);
+            }
+
+            // 创建和弦
+            playChord(frequencies, duration, startTime, type = 'sine', volume = 0.35) {
+                frequencies.forEach(freq => {
+                    this.playNote(freq, duration, startTime, type, volume);
+                });
+            }
+
+            // 生成银河系音乐 - 优美旋律
+            playGalaxyMusic() {
+                console.log('开始播放银河系音乐，当前时间:', this.audioContext ? this.audioContext.currentTime : '未初始化');
+                this.stopAll();
+                if (!this.audioContext) {
+                    console.error('音频上下文未初始化，无法播放音乐');
+                    return;
+                }
+
+                const C4 = 261.63;
+                const E4 = 329.63;
+                const G4 = 392.00;
+                const A4 = 440.00;
+                const C5 = 523.25;
+                const F4 = 349.23;
+                const G3 = 196.00;
+                const B3 = 246.94;
+                const D4 = 293.66;
+                const A3 = 220.00;
+                const F3 = 174.61;
+                const B4 = 493.88;
+                const D5 = 587.33;
+
+                // 优美的大调和弦进行
+                const melody = [
+                    // 小节 1-2
+                    { notes: [C4, E4, G4], duration: 2, time: 0 },
+                    { notes: [C4, F4, A4], duration: 2, time: 2 },
+                    { notes: [G3, B3, D4], duration: 2, time: 4 },
+                    { notes: [G3, C4, E4], duration: 2, time: 6 },
+
+                    // 小节 3-4
+                    { notes: [A3, C4, E4], duration: 2, time: 8 },
+                    { notes: [F3, A3, C4], duration: 2, time: 10 },
+                    { notes: [G3, B3, D4], duration: 2, time: 12 },
+                    { notes: [C4, E4, G4], duration: 4, time: 14 },
+
+                    // 小节 5-6
+                    { notes: [C4, E4, A4], duration: 2, time: 18 },
+                    { notes: [G4, B4, D5], duration: 2, time: 20 },
+                    { notes: [E4, G4, C5], duration: 2, time: 22 },
+                    { notes: [C4, E4, G4], duration: 2, time: 24 },
+
+                    // 小节 7-8
+                    { notes: [A3, D4, F4], duration: 2, time: 26 },
+                    { notes: [G3, B3, D4], duration: 2, time: 28 },
+                    { notes: [C4, E4, G4], duration: 4, time: 30 },
+                ];
+
+                // 添加背景低音
+                const bass = [
+                    { freq: C4 * 0.5, time: 0, duration: 34 }
+                ];
+
+                const now = this.audioContext.currentTime;
+                console.log('当前音频上下文时间:', now);
+                console.log('开始播放旋律，共', melody.length, '个和弦');
+                melody.forEach(chord => {
+                    this.playChord(chord.notes, chord.duration, now + chord.time, 'sine', 0.4);
+                });
+
+                console.log('开始播放低音，共', bass.length, '个音符');
+                bass.forEach(note => {
+                    this.playNote(note.freq, note.duration, now + note.time, 'triangle', 0.5);
+                });
+
+                // 循环播放
+                this.intervalId = setInterval(() => {
+                    if (this.isPlaying && musicEnabled) {
+                        const loopTime = this.audioContext.currentTime;
+                        melody.forEach(chord => {
+                            this.playChord(chord.notes, chord.duration, loopTime + chord.time, 'sine', 0.4);
+                        });
+                        bass.forEach(note => {
+                            this.playNote(note.freq, note.duration, loopTime + note.time, 'triangle', 0.5);
+                        });
+                    }
+                }, 34000);
+
+                this.isPlaying = true;
+                console.log('银河系旋律音乐开始播放，主音量:', this.masterGain.gain.value);
+            }
+
+            // 生成太阳系音乐 - 活泼旋律
+            playSolarMusic() {
+                this.stopAll();
+                if (!this.audioContext) return;
+
+                const G4 = 392.00;
+                const B4 = 493.88;
+                const D5 = 587.33;
+                const E5 = 659.25;
+                const E4 = 329.63;
+                const D4 = 293.66;
+                const F4 = 349.23;
+                const A4 = 440.00;
+                const C4 = 261.63;
+                const B3 = 246.94;
+                const C5 = 523.25;
+
+                // 活泼的小调和弦进行
+                const melody = [
+                    // 小节 1-2
+                    { notes: [E4, G4, B4], duration: 1.5, time: 0 },
+                    { notes: [D4, F4, A4], duration: 1.5, time: 1.5 },
+                    { notes: [C4, E4, G4], duration: 1.5, time: 3 },
+                    { notes: [B3, D4, G4], duration: 1.5, time: 4.5 },
+
+                    // 小节 3-4
+                    { notes: [E4, G4, C5], duration: 1.5, time: 6 },
+                    { notes: [D4, F4, B4], duration: 1.5, time: 7.5 },
+                    { notes: [C4, E4, A4], duration: 1.5, time: 9 },
+                    { notes: [B3, E4, G4], duration: 3, time: 10.5 },
+
+                    // 小节 5-6
+                    { notes: [G4, B4, D5], duration: 1.5, time: 13.5 },
+                    { notes: [F4, A4, C5], duration: 1.5, time: 15 },
+                    { notes: [E4, G4, B4], duration: 1.5, time: 16.5 },
+                    { notes: [D4, G4, B4], duration: 1.5, time: 18 },
+
+                    // 小节 7-8
+                    { notes: [C4, E4, A4], duration: 1.5, time: 19.5 },
+                    { notes: [B3, D4, G4], duration: 1.5, time: 21 },
+                    { notes: [C4, E4, G4], duration: 3, time: 22.5 },
+                ];
+
+                const bass = [
+                    { freq: 196.00, time: 0, duration: 25.5 }
+                ];
+
+                const now = this.audioContext.currentTime;
+                melody.forEach(chord => {
+                    this.playChord(chord.notes, chord.duration, now + chord.time, 'triangle', 0.35);
+                });
+
+                bass.forEach(note => {
+                    this.playNote(note.freq, note.duration, now + note.time, 'sine', 0.5);
+                });
+
+                // 循环播放
+                this.intervalId = setInterval(() => {
+                    if (this.isPlaying && musicEnabled) {
+                        const loopTime = this.audioContext.currentTime;
+                        melody.forEach(chord => {
+                            this.playChord(chord.notes, chord.duration, loopTime + chord.time, 'triangle', 0.35);
+                        });
+                        bass.forEach(note => {
+                            this.playNote(note.freq, note.duration, loopTime + note.time, 'sine', 0.5);
+                        });
+                    }
+                }, 25500);
+
+                this.isPlaying = true;
+                console.log('太阳系旋律音乐开始播放');
+            }
+
+            // 生成地球音乐 - 温柔旋律
+            playEarthMusic() {
+                this.stopAll();
+                if (!this.audioContext) return;
+
+                const D4 = 293.66;
+                const F4 = 349.23;
+                const A4 = 440.00;
+                const C4 = 261.63;
+                const E4 = 329.63;
+                const G4 = 392.00;
+                const B3 = 246.94;
+                const A3 = 220.00;
+                const G3 = 196.00;
+                const B4 = 493.88;
+                const C5 = 523.25;
+
+                // 温柔的旋律
+                const melody = [
+                    // 小节 1-2
+                    { notes: [D4, F4, A4], duration: 2, time: 0 },
+                    { notes: [C4, E4, G4], duration: 2, time: 2 },
+                    { notes: [B3, D4, G4], duration: 2, time: 4 },
+                    { notes: [A3, C4, E4], duration: 2, time: 6 },
+
+                    // 小节 3-4
+                    { notes: [G3, B3, D4], duration: 2, time: 8 },
+                    { notes: [A3, C4, E4], duration: 2, time: 10 },
+                    { notes: [B3, D4, F4], duration: 2, time: 12 },
+                    { notes: [C4, E4, G4], duration: 4, time: 14 },
+
+                    // 小节 5-6
+                    { notes: [D4, F4, A4], duration: 2, time: 18 },
+                    { notes: [E4, G4, B4], duration: 2, time: 20 },
+                    { notes: [F4, A4, C5], duration: 2, time: 22 },
+                    { notes: [E4, G4, B4], duration: 2, time: 24 },
+
+                    // 小节 7-8
+                    { notes: [D4, F4, A4], duration: 2, time: 26 },
+                    { notes: [C4, E4, G4], duration: 2, time: 28 },
+                    { notes: [D4, F4, A4], duration: 4, time: 30 },
+                ];
+
+                const bass = [
+                    { freq: D4 * 0.5, time: 0, duration: 34 }
+                ];
+
+                const now = this.audioContext.currentTime;
+                melody.forEach(chord => {
+                    this.playChord(chord.notes, chord.duration, now + chord.time, 'sine', 0.4);
+                });
+
+                bass.forEach(note => {
+                    this.playNote(note.freq, note.duration, now + note.time, 'triangle', 0.5);
+                });
+
+                // 循环播放
+                this.intervalId = setInterval(() => {
+                    if (this.isPlaying && musicEnabled) {
+                        const loopTime = this.audioContext.currentTime;
+                        melody.forEach(chord => {
+                            this.playChord(chord.notes, chord.duration, loopTime + chord.time, 'sine', 0.4);
+                        });
+                        bass.forEach(note => {
+                            this.playNote(note.freq, note.duration, loopTime + note.time, 'triangle', 0.5);
+                        });
+                    }
+                }, 34000);
+
+                this.isPlaying = true;
+                console.log('地球旋律音乐开始播放');
+            }
+
+            async resume() {
+                if (this.audioContext && this.audioContext.state === 'suspended') {
+                    await this.audioContext.resume();
+                    console.log('音频上下文已恢复');
+                }
+            }
+
+            setVolume(value) {
+                if (this.masterGain) {
+                    // 音量范围 0-1，直接使用滑块值，不降低音量
+                    this.masterGain.gain.setValueAtTime(value, this.audioContext.currentTime);
+                    console.log(`主音量设置为: ${value}`);
+                }
+            }
+        }
+
+        // 创建音乐生成器实例
+        const musicGenerator = new SpaceMusicGenerator();
         
         // 文本国际化
         const musicTexts = {
@@ -5285,55 +6152,155 @@
         function updateMusicInterfaceText() {
             const musicToggleBtn = document.getElementById('music-toggle');
             const volumeLabel = document.getElementById('volume-label');
-            
+
             if (musicToggleBtn) {
-                musicToggleBtn.textContent = musicEnabled ? 
-                    musicTexts[currentLang].musicOn : 
+                musicToggleBtn.textContent = musicEnabled ?
+                    musicTexts[currentLang].musicOn :
                     musicTexts[currentLang].musicOff;
             }
-            
+
             if (volumeLabel) {
                 volumeLabel.textContent = musicTexts[currentLang].volume;
             }
         }
-        
-        // 创建音频元素（添加错误处理）
-        function createAudioElement(trackName) {
-            const audio = new Audio();
-            audio.src = musicTracks[trackName];
-            audio.loop = true;
-            audio.volume = 0.5;
-            // 预加载音频
-            audio.preload = 'auto';
-            return audio;
+
+        // 初始化音乐播放器
+        function initMusicPlayer() {
+            // 音乐开关
+            const musicToggleBtn = document.getElementById('music-toggle');
+            if (musicToggleBtn) {
+                musicToggleBtn.addEventListener('click', function() {
+                    musicEnabled = !musicEnabled;
+                    updateMusicInterfaceText();
+
+                    if (musicEnabled) {
+                        console.log(`开启音乐，播放 ${currentLevel} 音乐`);
+                        playLevelMusic(currentLevel).then(() => {
+                            console.log("音乐播放成功");
+                        }).catch(e => {
+                            console.error("音乐播放失败:", e);
+                        });
+                    } else {
+                        musicGenerator.stopAll();
+                        console.log("音乐已关闭");
+                    }
+                });
+            }
+
+            // 音量控制
+            const musicVolumeSlider = document.getElementById('music-volume');
+            if (musicVolumeSlider) {
+                musicVolumeSlider.addEventListener('input', function(e) {
+                    const volume = parseFloat(e.target.value);
+                    musicGenerator.setVolume(volume);
+                    console.log(`音量设置为: ${volume}`);
+                });
+
+                // 初始化音量设置 - 在音乐初始化后设置
+                const initialVolume = parseFloat(musicVolumeSlider.value);
+                // 延迟设置音量，确保音频上下文已初始化
+                setTimeout(() => {
+                    if (musicGenerator.masterGain) {
+                        musicGenerator.setVolume(initialVolume);
+                        console.log(`初始音量设置为: ${initialVolume}`);
+                    }
+                }, 100);
+            }
+
+            // 在层级切换函数中集成音乐
+            // 修改enterSolarSystem函数
+            if (window.enterSolarSystem) {
+                const originalEnterSolarSystem = window.enterSolarSystem;
+                window.enterSolarSystem = function() {
+                    originalEnterSolarSystem();
+                    setTimeout(() => updateMusicForLevel('solar'), 100);
+                };
+            }
+
+            // 修改enterEarth函数
+            if (window.enterEarth) {
+                const originalEnterEarth = window.enterEarth;
+                window.enterEarth = function() {
+                    originalEnterEarth();
+                    setTimeout(() => updateMusicForLevel('earth'), 100);
+                };
+            }
+
+            // 修改goBack函数
+            if (window.goBack) {
+                const originalGoBack = window.goBack;
+                window.goBack = function() {
+                    const previousLevel = currentLevel;
+                    originalGoBack();
+                    // 根据返回后的层级设置音乐
+                    setTimeout(() => {
+                        if (musicEnabled && musicGenerator.isPlaying) {
+                            // 如果从地球返回到太阳系，播放太阳系音乐
+                            if (previousLevel === 'earth' && currentLevel === 'solar') {
+                                updateMusicForLevel('solar');
+                            }
+                            // 如果从太阳系返回到银河系，播放银河系音乐
+                            else if (previousLevel === 'solar' && currentLevel === 'galaxy') {
+                                updateMusicForLevel('galaxy');
+                            }
+                        }
+                    }, 200);
+                };
+            }
+
+            // 页面加载完成后初始化音乐界面文本
+            updateMusicInterfaceText();
+
+            // 监听用户第一次交互后再播放音乐（解决自动播放限制）
+            const playAfterInteraction = () => {
+                if (musicEnabled && !musicGenerator.isPlaying) {
+                    console.log("检测到用户交互，开始播放音乐");
+                    playLevelMusic('galaxy');
+                }
+                // 移除事件监听器
+                document.removeEventListener('click', playAfterInteraction);
+                document.removeEventListener('keydown', playAfterInteraction);
+                document.removeEventListener('touchstart', playAfterInteraction);
+            };
+
+            // 监听多种用户交互事件
+            document.addEventListener('click', playAfterInteraction, { once: true });
+            document.addEventListener('keydown', playAfterInteraction, { once: true });
+            document.addEventListener('touchstart', playAfterInteraction, { once: true });
+
+            console.log("音乐播放器已初始化，等待用户交互后播放");
         }
-        
-        // 播放指定层级的音乐
+
+        // 播放指定层级的音乐（使用程序化生成）
         async function playLevelMusic(level) {
             if (!musicEnabled) return;
-            
+
             try {
-                // 停止当前音乐
-                if (currentMusic) {
-                    currentMusic.pause();
-                    currentMusic.currentTime = 0;
+                // 初始化音乐生成器
+                await musicGenerator.init();
+
+                // 恢复音频上下文（已在init中处理）
+
+                // 根据层级播放不同的音乐
+                switch (level) {
+                    case 'galaxy':
+                        musicGenerator.playGalaxyMusic();
+                        break;
+                    case 'solar':
+                        musicGenerator.playSolarMusic();
+                        break;
+                    case 'earth':
+                        musicGenerator.playEarthMusic();
+                        break;
+                    default:
+                        musicGenerator.playGalaxyMusic();
                 }
-                
-                // 创建并播放新音乐
-                currentMusic = createAudioElement(level);
-                
-                // 等待音频可以播放
-                await currentMusic.play().catch(e => {
-                    console.log("音乐自动播放被阻止，可能需要用户交互:", e);
-                    // 如果自动播放失败，稍后重试
-                    setTimeout(() => {
-                        if (musicEnabled && currentMusic) {
-                            currentMusic.play().catch(err => console.log("重试播放失败:", err));
-                        }
-                    }, 1000);
-                });
+
+                console.log(`正在播放 ${level} 程序化音乐`);
+                return Promise.resolve();
             } catch (e) {
                 console.error("播放音乐时出错:", e);
+                return Promise.reject(e);
             }
         }
         
@@ -5344,82 +6311,13 @@
                 playLevelMusic(newLevel);
             }
         }
-        
-        // 确保DOM加载完成后再绑定事件
-        document.addEventListener('DOMContentLoaded', function() {
-            // 音乐开关
-            const musicToggleBtn = document.getElementById('music-toggle');
-            if (musicToggleBtn) {
-                musicToggleBtn.addEventListener('click', function() {
-                    musicEnabled = !musicEnabled;
-                    updateMusicInterfaceText();
-                    
-                    if (musicEnabled) {
-                        playLevelMusic(currentLevel);
-                    } else if (currentMusic) {
-                        currentMusic.pause();
-                        console.log("音乐已关闭");
-                    }
-                });
-            }
-            
-            // 音量控制
-            const musicVolumeSlider = document.getElementById('music-volume');
-            if (musicVolumeSlider) {
-                musicVolumeSlider.addEventListener('input', function(e) {
-                    const volume = parseFloat(e.target.value);
-                    if (currentMusic) {
-                        currentMusic.volume = volume;
-                    }
-                });
-            }
-            
-            // 页面加载完成后开始播放银河系音乐
-            setTimeout(() => {
-                if (musicEnabled) {
-                    playLevelMusic('galaxy');
-                }
-                updateMusicInterfaceText(); // 确保界面文本正确
-            }, 3000); // 延迟3秒开始播放，确保页面完全加载
-        });
-        
-        // 重写层级切换函数以集成音乐
-        // 保存原始函数引用
-        const originalFunctions = {
-            transitionToSolarSystem: window.transitionToSolarSystem,
-            transitionToEarth: window.transitionToEarth,
-            goBack: window.goBack
-        };
-        
-        // 重写函数以集成音乐功能
-        window.transitionToSolarSystem = function() {
-            originalFunctions.transitionToSolarSystem();
-            setTimeout(() => updateMusicForLevel('solar'), 100);
-        };
-        
-        window.transitionToEarth = function() {
-            originalFunctions.transitionToEarth();
-            setTimeout(() => updateMusicForLevel('earth'), 100);
-        };
-        
-        window.goBack = function() {
-            originalFunctions.goBack();
-            // 根据当前层级设置音乐
-            setTimeout(() => {
-                if (currentLevel === 'solar') {
-                    updateMusicForLevel('solar');
-                } else if (currentLevel === 'galaxy') {
-                    updateMusicForLevel('galaxy');
-                }
-            }, 200); // 延迟更长时间以确保层级切换完成
-        };
     </script>
     
     <!-- 音乐播放器 -->
     <div id="music-player" style="
         position: absolute;
-        bottom: 80px;
-        right: 20px;
+        bottom: 20px;
+        left: 20px;
         z-index: 300;
         background: rgba(0, 30, 60, 0.8);
         border: 1px solid #00f2fe;
@@ -5437,7 +6335,7 @@
                 cursor: pointer;
                 font-size: 14px;
             ">🎵 Music: On</button>
-            <input type="range" id="music-volume" min="0" max="1" step="0.1" value="0.5" style="
+            <input type="range" id="music-volume" min="0" max="1" step="0.1" value="0.8" style="
                 width: 80px;
             ">
             <span id="volume-label" style="color: #00f2fe; font-size: 12px;">Volume</span>

@@ -1,15 +1,18 @@
 {
   "name": "universe-model",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "A beautiful 3D interactive universe visualization application with three levels: Galaxy, Solar System, and Earth, featuring bilingual interface in Chinese and English.",
   "main": "index.html",
   "scripts": {
     "start": "npx serve .",
-    "test": "echo \"No tests specified\" && exit 0"
+    "dev": "npx serve -l 3000 .",
+    "test": "node check-html.js && node check-script-syntax.js",
+    "deploy": "sh deploy.sh",
+    "predeploy": "npm test"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/your-username/universe-model.git"
+    "url": "https://github.com/LeeBoor/universe-model.git"
   },
   "keywords": [
     "universe",
@@ -18,14 +21,16 @@
     "3d",
     "astronomy",
     "education",
-    "webgl"
+    "webgl",
+    "interactive",
+    "simulation"
   ],
   "author": "LeeBoor",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/your-username/universe-model/issues"
+    "url": "https://github.com/LeeBoor/universe-model/issues"
   },
-  "homepage": "https://github.com/your-username/universe-model#readme",
+  "homepage": "https://github.com/LeeBoor/universe-model#readme",
   "devDependencies": {
     "serve": "^14.2.0"
   }
